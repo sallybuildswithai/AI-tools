@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { LibraryClient } from "@/components/library-client";
 import { ToolGridSkeleton } from "@/components/tool-card-skeleton";
 import { GovernanceNotice } from "@/components/governance-notice";
+import type { UseCase } from "@/lib/types";
+import { useCaseLabels } from "@/lib/labels";
 
 export const metadata: Metadata = {
   title: "Bibliotek",
@@ -10,7 +12,31 @@ export const metadata: Metadata = {
     "Søg og filtrér AI-værktøjer efter kategori, use case, pris, godkendelse og dataklasse.",
 };
 
-export default function LibraryPage() {
+interface LibraryPageProps {
+  searchParams: Promise<{
+    q?: string | string[];
+    useCase?: string | string[];
+  }>;
+}
+
+function firstParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
+}
+
+function isUseCase(value: string): value is UseCase {
+  return value in useCaseLabels;
+}
+
+export default async function LibraryPage({ searchParams }: LibraryPageProps) {
+  const params = await searchParams;
+  const initialQuery = firstParam(params.q);
+  const useCaseCandidate = firstParam(params.useCase);
+  const initialUseCase = isUseCase(useCaseCandidate)
+    ? useCaseCandidate
+    : undefined;
+  const clientKey = `${initialQuery}:${initialUseCase ?? ""}`;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
       <div className="mb-8 max-w-2xl">
@@ -28,7 +54,11 @@ export default function LibraryPage() {
       </div>
 
       <Suspense fallback={<ToolGridSkeleton count={6} />}>
-        <LibraryClient />
+        <LibraryClient
+          key={clientKey}
+          initialQuery={initialQuery}
+          initialUseCase={initialUseCase}
+        />
       </Suspense>
     </div>
   );

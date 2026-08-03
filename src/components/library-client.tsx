@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { tools } from "@/lib/mock-data";
 import type { ToolFilters, UseCase } from "@/lib/types";
@@ -20,26 +20,24 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-function filtersFromSearchParams(params: URLSearchParams): ToolFilters {
-  const useCase = params.get("useCase") as UseCase | null;
-  return createDefaultFilters({
-    query: params.get("q") ?? "",
-    useCases: useCase ? [useCase] : [],
-  });
+interface LibraryClientProps {
+  initialQuery?: string;
+  initialUseCase?: UseCase;
 }
 
-export function LibraryClient() {
+export function LibraryClient({
+  initialQuery = "",
+  initialUseCase,
+}: LibraryClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [filters, setFilters] = useState<ToolFilters>(() =>
-    filtersFromSearchParams(new URLSearchParams(searchParams.toString())),
+    createDefaultFilters({
+      query: initialQuery,
+      useCases: initialUseCase ? [initialUseCase] : [],
+    }),
   );
   const [showSkeleton, setShowSkeleton] = useState(true);
-
-  useEffect(() => {
-    setFilters(filtersFromSearchParams(new URLSearchParams(searchParams.toString())));
-  }, [searchParams]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setShowSkeleton(false), 350);
@@ -58,8 +56,7 @@ export function LibraryClient() {
   }
 
   function resetFilters() {
-    const empty = createDefaultFilters();
-    updateFilters(empty);
+    updateFilters(createDefaultFilters());
     router.replace("/bibliotek");
   }
 
@@ -75,14 +72,15 @@ export function LibraryClient() {
         />
         <Sheet>
           <SheetTrigger
-            render={
-              <Button variant="outline" className="lg:hidden" />
-            }
+            render={<Button variant="outline" className="lg:hidden" />}
           >
             <SlidersHorizontal className="size-4" aria-hidden />
             Filtre
           </SheetTrigger>
-          <SheetContent side="left" className="w-[min(100%,22rem)] overflow-y-auto">
+          <SheetContent
+            side="left"
+            className="w-[min(100%,22rem)] overflow-y-auto"
+          >
             <SheetHeader>
               <SheetTitle>Filtre</SheetTitle>
             </SheetHeader>
