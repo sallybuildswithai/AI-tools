@@ -41,15 +41,25 @@ export function Footer() {
                 Governance
               </Link>
             </li>
+            <li>
+              <Link className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" href="/foresla">
+                Foreslå værktøj
+              </Link>
+            </li>
           </ul>
         </div>
 
         <div>
           <p className="mb-3 text-sm font-semibold text-foreground">Support</p>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>IT-sikkerhed (placeholder)</li>
-            <li>Juridisk afdeling (placeholder)</li>
-            <li>AI-enablement team (placeholder)</li>
+            <li>
+              <Link className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" href="/foresla">
+                Meld forældet information
+              </Link>
+            </li>
+            <li>IT-sikkerhed (kontakt mangler)</li>
+            <li>Juridisk afdeling (kontakt mangler)</li>
+            <li>AI-enablement team (kontakt mangler)</li>
           </ul>
         </div>
       </div>
