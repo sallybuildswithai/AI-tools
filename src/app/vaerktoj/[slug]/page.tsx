@@ -148,7 +148,7 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
                 rel="noopener noreferrer"
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
               >
-                Leverandørens website
+                Leverandørens hjemmeside
                 <ExternalLink className="size-3.5" aria-hidden />
               </a>
             ) : null}

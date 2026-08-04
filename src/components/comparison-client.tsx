@@ -51,7 +51,7 @@ export function ComparisonClient() {
               Vælg op til tre værktøjer
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sammenlign capabilities, pris, governance-status, dataklasse, SSO
+              Sammenlign funktioner, pris, governance-status, dataklasse, SSO
               og enterprise.
             </p>
           </div>

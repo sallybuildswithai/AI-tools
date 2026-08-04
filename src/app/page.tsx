@@ -64,14 +64,14 @@ export default function HomePage() {
       <section className="relative overflow-hidden border-b border-border/70">
         <div className="bg-grid-fade pointer-events-none absolute inset-0 opacity-70" />
         <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-          <p className="animate-fade-up font-heading text-sm font-semibold tracking-[0.04em] text-primary uppercase">
+          <p className="animate-fade-up font-heading text-3xl font-semibold tracking-tight text-primary sm:text-4xl lg:text-5xl">
             Værktøjsbiblioteket
           </p>
-          <h1 className="animate-fade-up-delay-1 mt-4 max-w-3xl font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
+          <h1 className="animate-fade-up-delay-1 mt-4 max-w-3xl font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-4xl lg:leading-[1.15]">
             Find det rette AI-værktøj til opgaven
           </h1>
           <p className="animate-fade-up-delay-2 mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Udforsk capabilities, use cases og governance-krav, så I kan vurdere
+            Udforsk funktioner, anvendelser og governance-krav, så I kan vurdere
             om et værktøj er relevant – og forsvarligt – at bruge i jeres arbejde.
           </p>
 
@@ -110,7 +110,8 @@ export default function HomePage() {
             Hurtig adgang via use case
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Vælg den type opgave, du står med, og se relevante værktøjer i biblioteket.
+            Vælg den type opgave, du står med, og se relevante værktøjer i
+            biblioteket.
           </p>
         </div>
         <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

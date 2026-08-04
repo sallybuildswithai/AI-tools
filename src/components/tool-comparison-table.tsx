@@ -47,7 +47,7 @@ export function ToolComparisonTable({
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead className="min-w-44 bg-muted/30 font-semibold">
-              Egenskab
+              Sammenligningspunkt
             </TableHead>
             {tools.map((tool) => (
               <TableHead key={tool.id} className="min-w-44 bg-muted/30">
