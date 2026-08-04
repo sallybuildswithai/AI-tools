@@ -37,7 +37,9 @@ export default function RootLayout({
     >
       <body className="bg-atmosphere flex min-h-full flex-col font-sans">
         <Header />
-        <main className="flex-1">{children}</main>
+        <main id="hovedindhold" className="flex-1">
+          {children}
+        </main>
         <Footer />
       </body>
     </html>

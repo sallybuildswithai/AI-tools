@@ -4,7 +4,7 @@ import { ComparisonClient } from "@/components/comparison-client";
 export const metadata: Metadata = {
   title: "Sammenlign",
   description:
-    "Sammenlign op til tre AI-værktøjer på capabilities, pris, governance og enterprise-funktioner.",
+    "Sammenlign op til tre AI-værktøjer på funktioner, pris, governance og enterprise-muligheder.",
 };
 
 export default function ComparisonPage() {
@@ -15,7 +15,7 @@ export default function ComparisonPage() {
           Sammenlign værktøjer
         </h1>
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-          Vælg op til tre værktøjer og få et overblik over capabilities, pris,
+          Vælg op til tre værktøjer og få et overblik over funktioner, pris,
           governance-status, dataklassifikation, SSO og enterprise-tilgængelighed.
         </p>
       </div>
