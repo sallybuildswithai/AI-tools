@@ -47,9 +47,9 @@ export function Footer() {
         <div>
           <p className="mb-3 text-sm font-semibold text-foreground">Support</p>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>IT-sikkerhed (placeholder)</li>
-            <li>Juridisk afdeling (placeholder)</li>
-            <li>AI-enablement team (placeholder)</li>
+            <li>IT-sikkerhed – kontaktoplysninger følger</li>
+            <li>Juridisk afdeling – kontaktoplysninger følger</li>
+            <li>AI-enablement-team – kontaktoplysninger følger</li>
           </ul>
         </div>
       </div>
