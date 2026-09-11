@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { CompareProvider } from "@/components/compare-provider";
 import "./globals.css";
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -36,9 +37,12 @@ export default function RootLayout({
       className={`${ibmPlexSans.variable} ${sourceSerif.variable} h-full antialiased`}
     >
       <body className="bg-atmosphere flex min-h-full flex-col font-sans">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        {/* Valget til sammenligning følger brugeren på tværs af siderne. */}
+        <CompareProvider>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </CompareProvider>
       </body>
     </html>
   );

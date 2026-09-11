@@ -1,4 +1,134 @@
 import type { AITool, ToolFilters } from "./types";
+import {
+  approvalStatusLabels,
+  categoryLabels,
+  dataClassificationLabels,
+  pricingModelLabels,
+  useCaseLabels,
+} from "./labels";
+
+/**
+ * Query-parameter navne for filtrene. Bruges både når URL'en skrives og læses,
+ * så et filtreret bibliotek kan deles og bogmærkes.
+ */
+const filterParamNames = {
+  categories: "kategori",
+  useCases: "useCase",
+  pricingModels: "pris",
+  approvalStatuses: "status",
+  dataClassifications: "data",
+} as const;
+
+const defaultSort = "name-asc";
+
+const sortValues = [
+  "name-asc",
+  "name-desc",
+  "lastReviewDate-asc",
+  "lastReviewDate-desc",
+] as const;
+
+/** Minimal aftale, så både URLSearchParams og Next.js' ReadonlyURLSearchParams kan bruges. */
+export interface ReadableSearchParams {
+  get(name: string): string | null;
+}
+
+function parseListParam<T extends string>(
+  raw: string | null,
+  labels: Record<T, string>,
+): T[] {
+  if (!raw) return [];
+
+  const values: T[] = [];
+  for (const part of raw.split(",")) {
+    const value = part.trim();
+    if (!value || values.includes(value as T)) continue;
+    if (!Object.prototype.hasOwnProperty.call(labels, value)) continue;
+    values.push(value as T);
+  }
+  return values;
+}
+
+export function parseFiltersFromParams(
+  params: ReadableSearchParams,
+): ToolFilters {
+  const rawSort = params.get("sort") ?? "";
+  const sort = (sortValues as readonly string[]).includes(rawSort)
+    ? rawSort
+    : defaultSort;
+  const [sortBy, sortOrder] = sort.split("-") as [
+    ToolFilters["sortBy"],
+    ToolFilters["sortOrder"],
+  ];
+
+  return {
+    query: params.get("q") ?? "",
+    categories: parseListParam(
+      params.get(filterParamNames.categories),
+      categoryLabels,
+    ),
+    useCases: parseListParam(
+      params.get(filterParamNames.useCases),
+      useCaseLabels,
+    ),
+    pricingModels: parseListParam(
+      params.get(filterParamNames.pricingModels),
+      pricingModelLabels,
+    ),
+    approvalStatuses: parseListParam(
+      params.get(filterParamNames.approvalStatuses),
+      approvalStatusLabels,
+    ),
+    dataClassifications: parseListParam(
+      params.get(filterParamNames.dataClassifications),
+      dataClassificationLabels,
+    ),
+    sortBy,
+    sortOrder,
+  };
+}
+
+export function filtersToSearchParams(filters: ToolFilters): URLSearchParams {
+  const params = new URLSearchParams();
+
+  if (filters.query) {
+    params.set("q", filters.query);
+  }
+
+  for (const [key, name] of Object.entries(filterParamNames)) {
+    const values = filters[key as keyof typeof filterParamNames];
+    if (values.length > 0) {
+      params.set(name, values.join(","));
+    }
+  }
+
+  const sort = `${filters.sortBy}-${filters.sortOrder}`;
+  if (sort !== defaultSort) {
+    params.set("sort", sort);
+  }
+
+  return params;
+}
+
+/** Returnerer "" eller "?…", så den kan sættes direkte efter en sti. */
+export function filtersToQueryString(filters: ToolFilters): string {
+  const query = filtersToSearchParams(filters).toString();
+  return query ? `?${query}` : "";
+}
+
+/**
+ * Tæller kun de filtre, der står i filterpanelet. Fritekstsøgningen har sit
+ * eget felt og må ikke give et tal på "Filtre"-knappen til et tomt panel.
+ */
+export function countActiveFilters(filters: ToolFilters): number {
+  return (
+    filters.categories.length +
+    filters.useCases.length +
+    filters.pricingModels.length +
+    filters.approvalStatuses.length +
+    filters.dataClassifications.length
+  );
+}
 
 export function createDefaultFilters(
   overrides: Partial<ToolFilters> = {},

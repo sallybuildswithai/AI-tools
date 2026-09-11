@@ -1,11 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { tools } from "@/lib/mock-data";
-import type { ToolFilters, UseCase } from "@/lib/types";
-import { createDefaultFilters, filterAndSortTools } from "@/lib/tool-utils";
+import type { ToolFilters } from "@/lib/types";
+import {
+  countActiveFilters,
+  createDefaultFilters,
+  filterAndSortTools,
+  filtersToQueryString,
+  parseFiltersFromParams,
+} from "@/lib/tool-utils";
 import { SearchBar } from "@/components/search-bar";
 import { FilterPanel } from "@/components/filter-panel";
 import { ToolCard } from "@/components/tool-card";
@@ -20,52 +33,96 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-interface LibraryClientProps {
-  initialQuery?: string;
-  initialUseCase?: UseCase;
-}
+/** Fritekst skrives til URL'en efter en kort pause, så adressefeltet ikke opdateres pr. tastetryk. */
+const queryDebounceMs = 300;
 
-export function LibraryClient({
-  initialQuery = "",
-  initialUseCase,
-}: LibraryClientProps) {
+export function LibraryClient() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [filters, setFilters] = useState<ToolFilters>(() =>
-    createDefaultFilters({
-      query: initialQuery,
-      useCases: initialUseCase ? [initialUseCase] : [],
-    }),
+
+  // URL'en er kilden til sandhed: filtrene kan deles, bogmærkes og navigeres med frem/tilbage.
+  const filters = useMemo(
+    () => parseFiltersFromParams(searchParams),
+    [searchParams],
   );
+
+  const [queryInput, setQueryInput] = useState(filters.query);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  // Husker den fritekst vi selv har skrevet til URL'en, så svaret ikke overskriver nyere tastetryk.
+  const pendingQueryRef = useRef<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setShowSkeleton(false), 350);
     return () => window.clearTimeout(timer);
   }, []);
 
-  const results = useMemo(
-    () => filterAndSortTools(tools, filters),
-    [filters],
+  const navigate = useCallback(
+    (next: ToolFilters, mode: "push" | "replace") => {
+      const url = `${pathname}${filtersToQueryString(next)}`;
+      startTransition(() => {
+        if (mode === "replace") {
+          router.replace(url, { scroll: false });
+        } else {
+          router.push(url, { scroll: false });
+        }
+      });
+    },
+    [pathname, router],
   );
 
+  // Skriv fritekst til URL'en, når brugeren holder pause. Vent på en igangværende
+  // navigation, så en ventende debounce ikke skriver forældede filtre tilbage.
+  useEffect(() => {
+    if (isPending || queryInput === filters.query) return;
+    const timer = window.setTimeout(() => {
+      pendingQueryRef.current = queryInput;
+      navigate({ ...filters, query: queryInput }, "replace");
+    }, queryDebounceMs);
+    return () => window.clearTimeout(timer);
+  }, [isPending, queryInput, filters, navigate]);
+
+  // Følg med, når URL'en ændrer sig udefra (frem/tilbage, delt link).
+  useEffect(() => {
+    if (pendingQueryRef.current === filters.query) {
+      pendingQueryRef.current = null;
+      return;
+    }
+    pendingQueryRef.current = null;
+    setQueryInput(filters.query);
+  }, [filters.query]);
+
+  // Resultaterne følger det, der står i feltet nu – URL'en må gerne halte 300 ms bagefter.
+  const effectiveFilters = useMemo<ToolFilters>(
+    () => ({ ...filters, query: queryInput }),
+    [filters, queryInput],
+  );
+
+  const results = useMemo(
+    () => filterAndSortTools(tools, effectiveFilters),
+    [effectiveFilters],
+  );
+
+  const activeFilterCount = countActiveFilters(effectiveFilters);
+
   function updateFilters(next: ToolFilters) {
-    startTransition(() => {
-      setFilters(next);
-    });
+    // Brug det, der står i søgefeltet lige nu – en ventende debounce må ikke tabes.
+    navigate({ ...next, query: queryInput }, "push");
   }
 
   function resetFilters() {
-    updateFilters(createDefaultFilters());
-    router.replace("/bibliotek");
+    pendingQueryRef.current = null;
+    setQueryInput("");
+    navigate(createDefaultFilters(), "push");
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchBar
-          value={filters.query}
-          onChange={(query) => updateFilters({ ...filters, query })}
+          value={queryInput}
+          onChange={setQueryInput}
           placeholder="Søg på navn, leverandør, tags…"
           aria-label="Søg i værktøjsbiblioteket"
           className="flex-1"
@@ -76,6 +133,7 @@ export function LibraryClient({
           >
             <SlidersHorizontal className="size-4" aria-hidden />
             Filtre
+            {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
           </SheetTrigger>
           <SheetContent
             side="left"

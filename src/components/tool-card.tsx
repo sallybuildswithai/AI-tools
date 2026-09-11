@@ -5,6 +5,7 @@ import { categoryLabels, useCaseLabels } from "@/lib/labels";
 import { formatDanishDate } from "@/lib/tool-utils";
 import { StatusBadge } from "@/components/status-badge";
 import { DataClassificationBadge } from "@/components/data-classification-badge";
+import { CompareToggle } from "@/components/compare-toggle";
 import { cn } from "@/lib/utils";
 
 interface ToolCardProps {
@@ -14,19 +15,24 @@ interface ToolCardProps {
 
 export function ToolCard({ tool, className }: ToolCardProps) {
   return (
-    <Link
-      href={`/vaerktoj/${tool.slug}`}
+    <article
       className={cn(
-        "group flex h-full flex-col rounded-xl border border-border/80 bg-card p-5 shadow-none transition-all duration-200",
+        "group relative flex h-full flex-col rounded-xl border border-border/80 bg-card p-5 shadow-none transition-all duration-200",
         "hover:-translate-y-0.5 hover:border-foreground/20 hover:bg-accent/30",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "focus-within:ring-2 focus-within:ring-ring",
         className,
       )}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="font-heading text-lg font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
-            {tool.name}
+          {/* Titlen er linket; ::after gør hele kortet klikbart uden at pakke knapper ind i et <a>. */}
+          <h3 className="font-heading text-lg font-semibold tracking-tight text-foreground">
+            <Link
+              href={`/vaerktoj/${tool.slug}`}
+              className="rounded outline-none after:absolute after:inset-0 after:rounded-xl after:content-['']"
+            >
+              {tool.name}
+            </Link>
           </h3>
           <p className="mt-0.5 text-sm text-muted-foreground">{tool.vendor}</p>
         </div>
@@ -67,6 +73,10 @@ export function ToolCard({ tool, className }: ToolCardProps) {
           Seneste review: {formatDanishDate(tool.lastReviewDate)}
         </p>
       </div>
-    </Link>
+
+      <div className="mt-4">
+        <CompareToggle slug={tool.slug} toolName={tool.name} />
+      </div>
+    </article>
   );
 }

@@ -1,40 +1,116 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { tools } from "@/lib/mock-data";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Check, Link2 } from "lucide-react";
+import { getToolsBySlugs, tools } from "@/lib/mock-data";
 import { ToolComparisonTable } from "@/components/tool-comparison-table";
 import { EmptyState } from "@/components/empty-state";
 import { GovernanceNotice } from "@/components/governance-notice";
+import {
+  buildCompareHref,
+  COMPARE_PARAM,
+  MAX_COMPARE_TOOLS,
+  parseCompareSlugs,
+  useCompare,
+} from "@/components/compare-provider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { DataClassificationBadge } from "@/components/data-classification-badge";
 
-const MAX_SELECTION = 3;
+/** Vises ved allerførste besøg, hvor brugeren hverken har et link eller et gemt valg. */
+const defaultCompareSlugs = ["chatgpt", "claude", "microsoft-copilot"];
 
 export function ComparisonClient() {
-  const [selectedSlugs, setSelectedSlugs] = useState<string[]>([
-    "chatgpt",
-    "claude",
-    "microsoft-copilot",
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { selected, hydrated, hasStoredSelection, setSelection } = useCompare();
+
+  const urlSlugs = searchParams.get(COMPARE_PARAM);
+  const [initialized, setInitialized] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Et delt link vinder over det gemte valg; standardtrioen kun ved allerførste besøg.
+  useEffect(() => {
+    if (!hydrated || initialized) return;
+    setInitialized(true);
+
+    if (urlSlugs !== null) {
+      const fromLink = parseCompareSlugs(urlSlugs);
+      // Et link, hvor intet slug kan genkendes, må ikke rydde brugerens eget valg.
+      if (fromLink.length > 0 || !urlSlugs) {
+        setSelection(fromLink);
+      }
+      return;
+    }
+
+    const initial = hasStoredSelection ? selected : defaultCompareSlugs;
+    setSelection(initial);
+    // Læg valget i adressen, så den kan deles med det samme.
+    router.replace(buildCompareHref(initial), { scroll: false });
+  }, [
+    hydrated,
+    initialized,
+    urlSlugs,
+    hasStoredSelection,
+    selected,
+    setSelection,
+    router,
   ]);
 
-  const selectedTools = useMemo(
-    () => tools.filter((tool) => selectedSlugs.includes(tool.slug)),
-    [selectedSlugs],
-  );
+  // Frem/tilbage og indsatte links: overtag adressen, når den ikke matcher valget.
+  // Valget er kilden til sandhed, så vi skriver aldrig adressen tilbage herfra.
+  useEffect(() => {
+    if (!initialized || urlSlugs === null) return;
+    const fromUrl = parseCompareSlugs(urlSlugs);
+    if (fromUrl.join(",") === selected.join(",")) return;
+
+    if (fromUrl.length === 0 && urlSlugs) {
+      // Ukendte slugs: ryd adressen op i stedet for at nulstille valget.
+      router.replace(buildCompareHref(selected), { scroll: false });
+      return;
+    }
+    setSelection(fromUrl);
+  }, [initialized, urlSlugs, selected, setSelection, router]);
+
+  // Valget skrives til adressen her – ikke fra en effekt – så et tryk på tilbage
+  // ikke bliver overskrevet, og hvert skift bliver et trin i historikken.
+  function applySelection(next: string[]) {
+    setSelection(next);
+    router.push(
+      // Et tomt valg får en tom parameter, så "ryddet" kan skelnes fra "ny besøgende".
+      next.length > 0 ? buildCompareHref(next) : `/sammenlign?${COMPARE_PARAM}=`,
+      { scroll: false },
+    );
+  }
 
   function toggleTool(slug: string) {
-    setSelectedSlugs((current) => {
-      if (current.includes(slug)) {
-        return current.filter((item) => item !== slug);
-      }
-      if (current.length >= MAX_SELECTION) {
-        return current;
-      }
-      return [...current, slug];
-    });
+    if (selected.includes(slug)) {
+      applySelection(selected.filter((item) => item !== slug));
+      return;
+    }
+    if (selected.length >= MAX_COMPARE_TOOLS) return;
+    applySelection([...selected, slug]);
+  }
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  // getToolsBySlugs bevarer brugerens rækkefølge i tabellen.
+  const selectedTools = useMemo(() => getToolsBySlugs(selected), [selected]);
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+    } catch {
+      // Udklipsholderen kan være blokeret – brugeren kan stadig kopiere fra adressefeltet.
+    }
   }
 
   return (
@@ -56,14 +132,14 @@ export function ComparisonClient() {
             </p>
           </div>
           <p className="text-sm text-muted-foreground" aria-live="polite">
-            {selectedSlugs.length} / {MAX_SELECTION} valgt
+            {selected.length} / {MAX_COMPARE_TOOLS} valgt
           </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tools.map((tool) => {
-            const checked = selectedSlugs.includes(tool.slug);
-            const disabled = !checked && selectedSlugs.length >= MAX_SELECTION;
+            const checked = selected.includes(tool.slug);
+            const disabled = !checked && selected.length >= MAX_COMPARE_TOOLS;
             const id = `compare-${tool.slug}`;
 
             return (
@@ -106,15 +182,31 @@ export function ComparisonClient() {
           })}
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setSelectedSlugs([])}
-          disabled={selectedSlugs.length === 0}
-        >
-          Ryd valg
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => applySelection([])}
+            disabled={selected.length === 0}
+          >
+            Ryd valg
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={copyLink}
+            disabled={selected.length === 0}
+          >
+            {copied ? (
+              <Check className="size-3.5" aria-hidden />
+            ) : (
+              <Link2 className="size-3.5" aria-hidden />
+            )}
+            {copied ? "Link kopieret" : "Kopiér link til sammenligning"}
+          </Button>
+        </div>
       </section>
 
       <section aria-labelledby="comparison-table-heading" className="space-y-4">
@@ -127,7 +219,7 @@ export function ComparisonClient() {
         {selectedTools.length === 0 ? (
           <EmptyState
             title="Ingen værktøjer valgt"
-            description="Vælg op til tre værktøjer ovenfor for at se en side-om-side sammenligning."
+            description="Vælg op til tre værktøjer ovenfor – eller tilføj dem med “Sammenlign” ude i biblioteket."
           />
         ) : (
           <ToolComparisonTable tools={selectedTools} />

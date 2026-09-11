@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ExternalLink, AlertTriangle } from "lucide-react";
+import { ExternalLink, AlertTriangle, Flag } from "lucide-react";
 import {
   getAlternativeTools,
   getToolBySlug,
@@ -17,6 +17,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { DataClassificationBadge } from "@/components/data-classification-badge";
 import { GovernanceNotice } from "@/components/governance-notice";
 import { ToolCard } from "@/components/tool-card";
+import { CompareToggle } from "@/components/compare-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -251,11 +252,30 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
             </div>
           </dl>
           <Separator />
+          <div className="space-y-2">
+            <CompareToggle
+              slug={tool.slug}
+              toolName={tool.name}
+              size="default"
+              fullWidth
+            />
+            <Link
+              href="/sammenlign"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "w-full",
+              )}
+            >
+              Gå til sammenligning
+            </Link>
+          </div>
+          <Separator />
           <Link
-            href={`/sammenlign`}
-            className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+            href={`/foresla?type=opdatering&vaerktoej=${tool.slug}`}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
           >
-            Sammenlign værktøjer
+            <Flag className="size-3.5" aria-hidden />
+            Meld forældet information
           </Link>
         </aside>
       </div>

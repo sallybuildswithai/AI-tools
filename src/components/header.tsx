@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Library, Menu, Scale, GitCompareArrows } from "lucide-react";
+import { Library, Menu, Scale } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { CompareNavLink } from "@/components/compare-nav-link";
 import {
   Sheet,
   SheetContent,
@@ -15,6 +16,7 @@ const navItems = [
   { href: "/bibliotek", label: "Bibliotek" },
   { href: "/sammenlign", label: "Sammenlign" },
   { href: "/governance", label: "Governance" },
+  { href: "/foresla", label: "Foreslå" },
 ];
 
 export function Header() {
@@ -54,16 +56,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/sammenlign"
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "hidden sm:inline-flex",
-            )}
-          >
-            <GitCompareArrows className="size-4" aria-hidden />
-            Sammenlign
-          </Link>
+          <CompareNavLink className="hidden sm:inline-flex" />
           <Link
             href="/governance"
             className={cn(buttonVariants({ size: "sm" }), "hidden sm:inline-flex")}
