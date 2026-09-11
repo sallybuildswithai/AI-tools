@@ -48,13 +48,12 @@ interface CompareContextValue {
   selected: string[];
   /** False indtil localStorage er læst – brug den til at undgå hydration-mismatch. */
   hydrated: boolean;
-  /** True hvis brugeren har et gemt valg fra et tidligere besøg. */
+  /** True kun hvis brugeren har et reelt (ikke-tomt) valg fra et tidligere besøg. */
   hasStoredSelection: boolean;
   isSelected: (slug: string) => boolean;
   isFull: boolean;
   toggle: (slug: string) => void;
   setSelection: (slugs: readonly string[]) => void;
-  clear: () => void;
 }
 
 const CompareContext = createContext<CompareContextValue | null>(null);
@@ -70,12 +69,13 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          setSelected(
-            sanitizeCompareSlugs(
-              parsed.filter((item): item is string => typeof item === "string"),
-            ),
+          const storedSelection = sanitizeCompareSlugs(
+            parsed.filter((item): item is string => typeof item === "string"),
           );
-          setHasStoredSelection(true);
+          setSelected(storedSelection);
+          // Kun et reelt valg tæller. Det tomme array, som persist-effekten
+          // skriver ved hvert besøg, må ikke forveksles med et bevidst fravalg.
+          setHasStoredSelection(storedSelection.length > 0);
         }
       }
     } catch {
@@ -109,8 +109,6 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
     setSelected(sanitizeCompareSlugs(slugs));
   }, []);
 
-  const clear = useCallback(() => setSelected([]), []);
-
   const value = useMemo<CompareContextValue>(
     () => ({
       selected,
@@ -120,9 +118,8 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
       isFull: selected.length >= MAX_COMPARE_TOOLS,
       toggle,
       setSelection,
-      clear,
     }),
-    [selected, hydrated, hasStoredSelection, toggle, setSelection, clear],
+    [selected, hydrated, hasStoredSelection, toggle, setSelection],
   );
 
   return (

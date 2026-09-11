@@ -116,14 +116,17 @@ export function filtersToQueryString(filters: ToolFilters): string {
   return query ? `?${query}` : "";
 }
 
+/**
+ * Tæller kun de filtre, der står i filterpanelet. Fritekstsøgningen har sit
+ * eget felt og må ikke give et tal på "Filtre"-knappen til et tomt panel.
+ */
 export function countActiveFilters(filters: ToolFilters): number {
   return (
     filters.categories.length +
     filters.useCases.length +
     filters.pricingModels.length +
     filters.approvalStatuses.length +
-    filters.dataClassifications.length +
-    (filters.query ? 1 : 0)
+    filters.dataClassifications.length
   );
 }
 

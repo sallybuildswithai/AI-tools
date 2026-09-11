@@ -35,6 +35,10 @@ export default async function ContributionPage({
       ? "opdatering"
       : "nyt-vaerktoj";
 
+  // Formularen sår sin state fra props, og Next remounter den ikke, når kun
+  // query-parametrene skifter – key'en sikrer et rent skema pr. link.
+  const clientKey = `${initialType}:${prefilledTool?.slug ?? ""}`;
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
       <div className="mb-8">
@@ -53,6 +57,7 @@ export default async function ContributionPage({
       </div>
 
       <ContributionForm
+        key={clientKey}
         initialType={initialType}
         initialToolSlug={prefilledTool?.slug ?? ""}
       />

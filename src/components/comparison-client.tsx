@@ -26,33 +26,74 @@ const defaultCompareSlugs = ["chatgpt", "claude", "microsoft-copilot"];
 export function ComparisonClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { selected, hydrated, hasStoredSelection, toggle, setSelection, clear } =
-    useCompare();
+  const { selected, hydrated, hasStoredSelection, setSelection } = useCompare();
 
   const urlSlugs = searchParams.get(COMPARE_PARAM);
-  // Bevidst state og ikke en ref: synkroniseringen nedenfor må først køre i den
-  // næste commit, hvor valget fra linket rent faktisk er landet.
   const [initialized, setInitialized] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Et delt link vinder over det gemte valg; ellers bruges det, brugeren har samlet undervejs.
+  // Et delt link vinder over det gemte valg; standardtrioen kun ved allerførste besøg.
   useEffect(() => {
     if (!hydrated || initialized) return;
+    setInitialized(true);
 
     if (urlSlugs !== null) {
-      setSelection(parseCompareSlugs(urlSlugs));
-    } else if (!hasStoredSelection) {
-      setSelection(defaultCompareSlugs);
+      const fromLink = parseCompareSlugs(urlSlugs);
+      // Et link, hvor intet slug kan genkendes, må ikke rydde brugerens eget valg.
+      if (fromLink.length > 0 || !urlSlugs) {
+        setSelection(fromLink);
+      }
+      return;
     }
-    setInitialized(true);
-  }, [hydrated, initialized, urlSlugs, hasStoredSelection, setSelection]);
 
-  // Hold adressen opdateret, så sammenligningen altid kan kopieres og deles.
+    const initial = hasStoredSelection ? selected : defaultCompareSlugs;
+    setSelection(initial);
+    // Læg valget i adressen, så den kan deles med det samme.
+    router.replace(buildCompareHref(initial), { scroll: false });
+  }, [
+    hydrated,
+    initialized,
+    urlSlugs,
+    hasStoredSelection,
+    selected,
+    setSelection,
+    router,
+  ]);
+
+  // Frem/tilbage og indsatte links: overtag adressen, når den ikke matcher valget.
+  // Valget er kilden til sandhed, så vi skriver aldrig adressen tilbage herfra.
   useEffect(() => {
-    if (!initialized) return;
-    if ((urlSlugs ?? "") === selected.join(",")) return;
-    router.replace(buildCompareHref(selected), { scroll: false });
-  }, [initialized, selected, urlSlugs, router]);
+    if (!initialized || urlSlugs === null) return;
+    const fromUrl = parseCompareSlugs(urlSlugs);
+    if (fromUrl.join(",") === selected.join(",")) return;
+
+    if (fromUrl.length === 0 && urlSlugs) {
+      // Ukendte slugs: ryd adressen op i stedet for at nulstille valget.
+      router.replace(buildCompareHref(selected), { scroll: false });
+      return;
+    }
+    setSelection(fromUrl);
+  }, [initialized, urlSlugs, selected, setSelection, router]);
+
+  // Valget skrives til adressen her – ikke fra en effekt – så et tryk på tilbage
+  // ikke bliver overskrevet, og hvert skift bliver et trin i historikken.
+  function applySelection(next: string[]) {
+    setSelection(next);
+    router.push(
+      // Et tomt valg får en tom parameter, så "ryddet" kan skelnes fra "ny besøgende".
+      next.length > 0 ? buildCompareHref(next) : `/sammenlign?${COMPARE_PARAM}=`,
+      { scroll: false },
+    );
+  }
+
+  function toggleTool(slug: string) {
+    if (selected.includes(slug)) {
+      applySelection(selected.filter((item) => item !== slug));
+      return;
+    }
+    if (selected.length >= MAX_COMPARE_TOOLS) return;
+    applySelection([...selected, slug]);
+  }
 
   useEffect(() => {
     if (!copied) return;
@@ -113,7 +154,7 @@ export function ComparisonClient() {
                   id={id}
                   checked={checked}
                   disabled={disabled}
-                  onCheckedChange={() => toggle(tool.slug)}
+                  onCheckedChange={() => toggleTool(tool.slug)}
                   className="mt-0.5"
                 />
                 <span className="min-w-0 flex-1 space-y-2">
@@ -146,7 +187,7 @@ export function ComparisonClient() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={clear}
+            onClick={() => applySelection([])}
             disabled={selected.length === 0}
           >
             Ryd valg
