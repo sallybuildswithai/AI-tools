@@ -15,6 +15,7 @@ const navItems = [
   { href: "/bibliotek", label: "Bibliotek" },
   { href: "/sammenlign", label: "Sammenlign" },
   { href: "/governance", label: "Governance" },
+  { href: "/cricket-coach", label: "Cricket Coach" },
 ];
 
 export function Header() {
